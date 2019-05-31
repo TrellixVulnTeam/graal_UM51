@@ -144,8 +144,8 @@ public class AMD64Binary {
         public static final LIRInstructionClass<VectorAddOp> TYPE = LIRInstructionClass.create(VectorAddOp.class);
 
         @Def({REG}) protected AllocatableValue result;
-        @Use({REG}) protected AllocatableValue x;
-        @Use({REG}) protected AllocatableValue y;
+        @Alive({REG}) protected AllocatableValue x;
+        @Alive({REG}) protected AllocatableValue y;
 
         public VectorAddOp(AllocatableValue result, AllocatableValue x, AllocatableValue y) {
             super(TYPE);
