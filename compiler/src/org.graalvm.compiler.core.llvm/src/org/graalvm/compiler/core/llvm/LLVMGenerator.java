@@ -33,6 +33,7 @@ import static org.graalvm.compiler.core.llvm.LLVMUtils.getVal;
 import static org.graalvm.compiler.debug.GraalError.shouldNotReachHere;
 import static org.graalvm.compiler.debug.GraalError.unimplemented;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -390,6 +391,11 @@ public class LLVMGenerator implements LIRGeneratorTool {
     public <K extends ValueKind<K>> K toRegisterKind(K kind) {
         /* Registers are handled by LLVM. */
         throw unimplemented();
+    }
+
+    @Override
+    public <K extends ValueKind<K>> K toVectorKind(K kind, int count) {
+      throw unimplemented();
     }
 
     @Override
@@ -1028,6 +1034,11 @@ public class LLVMGenerator implements LIRGeneratorTool {
         return new LLVMVariable(builder.buildPtrToInt(returnAddress, builder.longType()));
     }
 
+    @Override
+    public Variable emitPackConst(LIRKind resultKind, ByteBuffer serializedValues) {
+      throw unimplemented();
+    }
+
     public LLVMGenerationResult getLLVMResult() {
         return generationResult;
     }
@@ -1053,6 +1064,11 @@ public class LLVMGenerator implements LIRGeneratorTool {
         public Value emitAdd(Value a, Value b, boolean setFlags) {
             LLVMValueRef add = builder.buildAdd(getVal(a), getVal(b));
             return new LLVMVariable(add);
+        }
+
+        @Override
+        public Value emitVectorAdd(Value a, Value b, boolean setFlags) {
+            throw unimplemented();
         }
 
         @Override
@@ -1325,6 +1341,16 @@ public class LLVMGenerator implements LIRGeneratorTool {
         public Variable emitLoad(LIRKind kind, Value address, LIRFrameState state) {
             LLVMValueRef load = builder.buildLoad(getVal(address), getType(kind));
             return new LLVMVariable(load);
+        }
+
+        @Override
+        public Variable emitVectorLoad(LIRKind kind, int count, Value address, LIRFrameState state) {
+            throw unimplemented();
+        }
+
+        @Override
+        public void emitVectorStore(LIRKind kind, int count, Value address, Value value, LIRFrameState state) {
+            throw unimplemented();
         }
 
         @Override
