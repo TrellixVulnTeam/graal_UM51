@@ -68,6 +68,7 @@ import org.graalvm.compiler.lir.amd64.AMD64Move;
 import org.graalvm.compiler.lir.amd64.AMD64MulDivOp;
 import org.graalvm.compiler.lir.amd64.AMD64ShiftOp;
 import org.graalvm.compiler.lir.amd64.AMD64SignExtendOp;
+import org.graalvm.compiler.lir.amd64.AMD64Ternary;
 import org.graalvm.compiler.lir.amd64.AMD64Unary;
 import org.graalvm.compiler.lir.amd64.AMD64ZeroMemoryOp;
 import org.graalvm.compiler.lir.amd64.vector.AMD64Packing;
@@ -128,6 +129,8 @@ import static org.graalvm.compiler.asm.amd64.AMD64Assembler.VexRVMOp.VDIVPD;
 import static org.graalvm.compiler.asm.amd64.AMD64Assembler.VexRVMOp.VDIVPS;
 import static org.graalvm.compiler.asm.amd64.AMD64Assembler.VexRVMOp.VDIVSD;
 import static org.graalvm.compiler.asm.amd64.AMD64Assembler.VexRVMOp.VDIVSS;
+import static org.graalvm.compiler.asm.amd64.AMD64Assembler.VexRVMOp.VFMADD231SD;
+import static org.graalvm.compiler.asm.amd64.AMD64Assembler.VexRVMOp.VFMADD231SS;
 import static org.graalvm.compiler.asm.amd64.AMD64Assembler.VexRVMOp.VMULPD;
 import static org.graalvm.compiler.asm.amd64.AMD64Assembler.VexRVMOp.VMULPS;
 import static org.graalvm.compiler.asm.amd64.AMD64Assembler.VexRVMOp.VMULSD;
@@ -545,6 +548,13 @@ public class AMD64ArithmeticLIRGenerator extends ArithmeticLIRGenerator implemen
             default:
                 throw GraalError.shouldNotReachHere();
         }
+    }
+
+    public Value emitBinaryMemory(VexRVMOp op, OperandSize size, AllocatableValue a, AMD64AddressValue location, LIRFrameState state) {
+        assert (size.isXmmType() && supportAVX());
+        Variable result = getLIRGen().newVariable(LIRKind.combine(a));
+        getLIRGen().append(new AMD64VectorBinary.AVXBinaryMemoryOp(op, getRegisterSize(result), result, a, location, state));
+        return result;
     }
 
     public Value emitBinaryMemory(AMD64RMOp op, OperandSize size, AllocatableValue a, AMD64AddressValue location, LIRFrameState state) {
@@ -1132,6 +1142,22 @@ public class AMD64ArithmeticLIRGenerator extends ArithmeticLIRGenerator implemen
     }
 
     @Override
+    public Variable emitFusedMultiplyAdd(Value a, Value b, Value c) {
+        Variable result = getLIRGen().newVariable(LIRKind.combine(a, b, c));
+        assert ((AMD64Kind) a.getPlatformKind()).isXMM() && ((AMD64Kind) b.getPlatformKind()).isXMM() && ((AMD64Kind) c.getPlatformKind()).isXMM();
+        assert a.getPlatformKind().equals(b.getPlatformKind());
+        assert b.getPlatformKind().equals(c.getPlatformKind());
+
+        if (a.getPlatformKind() == AMD64Kind.DOUBLE) {
+            getLIRGen().append(new AMD64Ternary.ThreeOp(VFMADD231SD, AVXSize.XMM, result, asAllocatable(c), asAllocatable(a), asAllocatable(b)));
+        } else {
+            assert a.getPlatformKind() == AMD64Kind.SINGLE;
+            getLIRGen().append(new AMD64Ternary.ThreeOp(VFMADD231SS, AVXSize.XMM, result, asAllocatable(c), asAllocatable(a), asAllocatable(b)));
+        }
+        return result;
+    }
+
+    @Override
     public Value emitCountLeadingZeros(Value value) {
         Variable result = getLIRGen().newVariable(LIRKind.combine(value).changeType(AMD64Kind.DWORD));
         assert ((AMD64Kind) value.getPlatformKind()).isInteger();
@@ -1505,7 +1531,7 @@ public class AMD64ArithmeticLIRGenerator extends ArithmeticLIRGenerator implemen
         return result;
     }
 
-    private boolean supportAVX() {
+    public boolean supportAVX() {
         TargetDescription target = getLIRGen().target();
         return ((AMD64) target.arch).getFeatures().contains(CPUFeature.AVX);
     }

@@ -1,7 +1,13 @@
 suite = {
+<<<<<<< HEAD
     "mxversion": "5.218.0",
     "name": "substratevm",
     "version" : "19.0.2",
+=======
+    "mxversion": "5.223.0",
+    "name": "substratevm",
+    "version" : "19.1.1",
+>>>>>>> vm-19.1.1
     "release" : True,
     "url" : "https://github.com/oracle/graal/tree/master/substratevm",
 
@@ -43,6 +49,43 @@ suite = {
     },
 
     "projects": {
+        "com.oracle.svm.util": {
+            "subDir": "src",
+            "sourceDirs": ["src"],
+            "dependencies": [
+                "sdk:GRAAL_SDK",
+                "compiler:GRAAL",
+            ],
+            "javaCompliance": "8+",
+            "annotationProcessors": [
+                "compiler:GRAAL_NODEINFO_PROCESSOR",
+                "compiler:GRAAL_REPLACEMENTS_PROCESSOR",
+                "compiler:GRAAL_OPTIONS_PROCESSOR",
+            ],
+            "checkstyle": "com.oracle.svm.core",
+            "workingSets": "SVM",
+        },
+        "com.oracle.svm.util.jdk11": {
+            "subDir": "src",
+            "sourceDirs": ["src"],
+            "dependencies": [
+                "com.oracle.svm.util",
+            ],
+            "imports" : [
+                "jdk.internal.module",
+            ],
+            "javaCompliance": "11+",
+            "multiReleaseJarVersion": "11",
+            "overlayTarget" : "com.oracle.svm.util",
+            "annotationProcessors": [
+                "compiler:GRAAL_NODEINFO_PROCESSOR",
+                "compiler:GRAAL_REPLACEMENTS_PROCESSOR",
+                "compiler:GRAAL_OPTIONS_PROCESSOR",
+            ],
+            "checkstyle": "com.oracle.svm.core",
+            "workingSets": "SVM",
+        },
+
         "com.oracle.svm.core": {
             "subDir": "src",
             "sourceDirs": [
@@ -50,8 +93,7 @@ suite = {
                 "headers",
             ],
             "dependencies": [
-                "sdk:GRAAL_SDK",
-                "compiler:GRAAL",
+                "com.oracle.svm.util",
             ],
             "javaCompliance": "8+",
             "checkstyleVersion" : "8.8",
@@ -67,12 +109,13 @@ suite = {
             "subDir": "src",
             "sourceDirs": ["src"],
             "dependencies": ["com.oracle.svm.core"],
+            "overlayTarget" : "com.oracle.svm.core",
             "javaCompliance": "8",
             "checkstyle": "com.oracle.svm.core",
             "workingSets": "SVM",
         },
 
-        "com.oracle.svm.core.jdk9": {
+        "com.oracle.svm.core.jdk11": {
             "subDir": "src",
             "sourceDirs": ["src"],
             "dependencies": ["com.oracle.svm.core"],
@@ -80,25 +123,27 @@ suite = {
                 "jdk.internal.misc",
                 "jdk.internal.perf",
             ],
-            "javaCompliance": "9+",
-            "multiReleaseJarVersion": "9",
+            "javaCompliance": "11+",
+            "overlayTarget" : "com.oracle.svm.core",
+            "multiReleaseJarVersion": "11",
             "checkstyle": "com.oracle.svm.core",
             "workingSets": "SVM",
         },
 
-        "com.oracle.svm.core.posix.jdk9": {
+        "com.oracle.svm.core.posix.jdk11": {
             "subDir": "src",
             "sourceDirs": ["src"],
             "dependencies": [
-                "com.oracle.svm.core.jdk9",
+                "com.oracle.svm.core.jdk11",
                 "com.oracle.svm.core.posix"
                 ],
             "imports" : [
                 "jdk.internal.misc",
                 "jdk.internal.perf",
             ],
-            "javaCompliance": "9+",
-            "multiReleaseJarVersion": "9",
+            "javaCompliance": "11+",
+            "overlayTarget" : "com.oracle.svm.core.posix",
+            "multiReleaseJarVersion": "11",
             "checkstyle": "com.oracle.svm.core",
             "workingSets": "SVM",
         },
@@ -189,7 +234,7 @@ suite = {
             "subDir": "src",
             "sourceDirs": ["src"],
             "dependencies": [
-                "com.oracle.svm.hosted",
+                "com.oracle.svm.core",
             ],
             "checkstyle": "com.oracle.svm.core",
             "javaCompliance": "8+",
@@ -206,7 +251,7 @@ suite = {
             "subDir": "src",
             "sourceDirs": ["src"],
             "dependencies": [
-                "com.oracle.svm.hosted",
+                "com.oracle.svm.core",
             ],
             "checkstyle": "com.oracle.svm.core",
             "javaCompliance": "8+",
@@ -223,7 +268,7 @@ suite = {
             "subDir": "src",
             "sourceDirs": ["src"],
             "dependencies": [
-                "compiler:GRAAL",
+                "com.oracle.svm.util",
             ],
             "checkstyle": "com.oracle.graal.pointsto",
             "javaCompliance": "8+",
@@ -307,6 +352,7 @@ suite = {
             "subDir": "src",
             "native": "static_lib",
             "deliverable" : "jvm",
+            "use_jdk_headers" : True,
             "os_arch" : {
                 "darwin": {
                     "amd64" : {
@@ -371,8 +417,7 @@ suite = {
                 "resources"
             ],
             "dependencies": [
-                "com.oracle.svm.graal",
-                "com.oracle.svm.reflect",
+                "com.oracle.svm.hosted",
             ],
             "checkstyle": "com.oracle.svm.driver",
             "checkstyleVersion" : "8.8",
@@ -537,18 +582,6 @@ suite = {
                 "truffle:TRUFFLE_DSL_PROCESSOR",
             ],
             "workingSets": "SVM",
-            "os_arch": {
-                "windows": {
-                    "<others>": {
-                        "ignore": "posix only project",
-                    },
-                },
-                "<others>": {
-                    "<others>": {
-                        "ignore": False,
-                    },
-                },
-            },
         },
 
         "com.oracle.svm.truffle.nfi.windows": {
@@ -564,18 +597,6 @@ suite = {
                 "truffle:TRUFFLE_DSL_PROCESSOR",
             ],
             "workingSets": "SVM",
-            "os_arch": {
-                "windows": {
-                    "<others>": {
-                        "ignore": False,
-                    },
-                },
-                "<others>": {
-                    "<others>": {
-                        "ignore": "only windows is supported",
-                    },
-                },
-            },
         },
 
         "com.oracle.svm.jline": {
@@ -645,7 +666,7 @@ suite = {
                 "compiler:GRAAL"
             ],
             "checkstyle" : "com.oracle.svm.hosted",
-            "javaCompliance": "1.8",
+            "javaCompliance": "8,13+",
             "annotationProcessors": [
                 "compiler:GRAAL_NODEINFO_PROCESSOR",
                 "compiler:GRAAL_REPLACEMENTS_PROCESSOR",
@@ -660,7 +681,7 @@ suite = {
                 "resources",
             ],
             "dependencies": [
-                "com.oracle.svm.hosted",
+                "com.oracle.svm.core",
             ],
             "checkstyle": "com.oracle.svm.driver",
             "workingSets": "SVM",
@@ -710,10 +731,7 @@ suite = {
                 "com.oracle.svm.core",
                 "com.oracle.svm.core.graal.amd64",
                 "com.oracle.svm.core.graal.aarch64",
-                "com.oracle.svm.core.jdk8",
-                "com.oracle.svm.core.jdk9",
                 "com.oracle.svm.core.posix",
-                "com.oracle.svm.core.posix.jdk9",
                 "com.oracle.svm.core.windows",
                 "com.oracle.svm.core.genscavenge",
                 "com.oracle.svm.jni",
@@ -744,6 +762,7 @@ suite = {
             "distDependencies": [
                 "sdk:GRAAL_SDK",
                 "compiler:GRAAL",
+                "POINTSTO",
             ],
             "exclude": [
             ],
@@ -753,6 +772,7 @@ suite = {
         "SVM_HOSTED": {
             "subDir": "src",
             "dependencies": [
+                "com.oracle.svm.core",
                 "com.oracle.svm.truffle",
             ],
             "distDependencies": [
@@ -798,7 +818,9 @@ suite = {
         },
 
         "GRAAL_HOTSPOT_LIBRARY": {
+            "subDir": "src",
             "description" : "SubstrateVM HotSpot Graal library support",
+            "javaCompliance": "8,13+",
             "dependencies": [
                 "com.oracle.svm.graal.hotspot.libgraal",
             ],
@@ -854,6 +876,7 @@ suite = {
         },
 
         "SVM_AGENT": {
+            "subDir": "src",
             "description" : "SubstrateVM native-image-agent library",
             "dependencies": [
                 "com.oracle.svm.agent",
@@ -885,6 +908,7 @@ suite = {
             "subDir": "src",
             "description" : "SubstrateVM static analysis to find ahead-of-time the code",
             "dependencies": [
+                "com.oracle.svm.util",
                 "com.oracle.graal.pointsto",
             ],
             "distDependencies": [
@@ -895,6 +919,7 @@ suite = {
         },
 
         "SVM_TESTS" : {
+          "subDir": "src",
           "relpath" : True,
           "dependencies" : [
             "com.oracle.svm.test",
@@ -907,6 +932,7 @@ suite = {
         },
 
         "POLYGLOT_NATIVE_API" : {
+            "subDir": "src",
             "dependencies": [
                 "org.graalvm.polyglot.nativeapi",
             ],
@@ -966,6 +992,7 @@ suite = {
 
         "SVM_LLVM" : {
             "subDir" : "src",
+            "description" : "LLVM backend for Native Image",
             "dependencies" : ["com.oracle.svm.core.graal.llvm"],
             "distDependencies" : [
                 "SVM",

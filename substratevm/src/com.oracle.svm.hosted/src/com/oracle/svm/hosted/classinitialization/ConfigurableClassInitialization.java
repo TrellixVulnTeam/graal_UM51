@@ -124,10 +124,11 @@ public class ConfigurableClassInitialization implements ClassInitializationSuppo
      * Ensure class is initialized. Report class initialization errors in a user-friendly way if
      * class initialization fails.
      */
-    private InitKind ensureClassInitialized(Class<?> clazz) {
+    private InitKind ensureClassInitialized(Class<?> clazz, boolean allowErrors) {
         try {
             UNSAFE.ensureClassInitialized(clazz);
             return InitKind.BUILD_TIME;
+<<<<<<< HEAD
         } catch (Throwable ex) {
             if (NativeImageOptions.ReportUnsupportedElementsAtRuntime.getValue() || NativeImageOptions.AllowIncompleteClasspath.getValue()) {
                 System.out.println("Warning: class initialization of class " + clazz.getTypeName() + " failed with exception " +
@@ -150,11 +151,53 @@ public class ConfigurableClassInitialization implements ClassInitializationSuppo
                 } else {
                     /* Fail immediately if we are before or after static analysis. */
                     throw UserError.abort(msg, ex);
+=======
+        } catch (NoClassDefFoundError ex) {
+            if (NativeImageOptions.AllowIncompleteClasspath.getValue()) {
+                if (!allowErrors) {
+                    System.out.println("Warning: class initialization of class " + clazz.getTypeName() + " failed with exception " +
+                                    ex.getClass().getTypeName() + (ex.getMessage() == null ? "" : ": " + ex.getMessage()) + ". This class will be initialized at run time because option " +
+                                    SubstrateOptionsParser.commandArgument(NativeImageOptions.AllowIncompleteClasspath, "+") + " is used for image building. " +
+                                    instructionsToInitializeAtRuntime(clazz));
+>>>>>>> vm-19.1.1
                 }
-            }
+                return InitKind.RUN_TIME;
+            } else {
+                return reportInitializationError(allowErrors, clazz, ex);
 
-            return InitKind.RUN_TIME;
+            }
+        } catch (Throwable t) {
+            return reportInitializationError(allowErrors, clazz, t);
         }
+    }
+
+<<<<<<< HEAD
+            return InitKind.RUN_TIME;
+=======
+    private InitKind reportInitializationError(boolean allowErrors, Class<?> clazz, Throwable t) {
+        if (allowErrors) {
+            return InitKind.RUN_TIME;
+        } else {
+            String msg = "Class initialization of " + clazz.getTypeName() + " failed. " + instructionsToInitializeAtRuntime(clazz);
+            if (unsupportedFeatures != null) {
+                /*
+                 * Report an unsupported feature during static analysis, so that we can collect
+                 * multiple error messages without aborting analysis immediately. Returning
+                 * InitKind.RUN_TIME ensures that analysis can continue, even though eventually an
+                 * error is reported (so no image will be created).
+                 */
+                unsupportedFeatures.addMessage(clazz.getTypeName(), null, msg, null, t);
+                return InitKind.RUN_TIME;
+            } else {
+                throw UserError.abort(msg, t);
+            }
+>>>>>>> vm-19.1.1
+        }
+    }
+
+    private static String instructionsToInitializeAtRuntime(Class<?> clazz) {
+        return "Use the option " + SubstrateOptionsParser.commandArgument(ClassInitializationFeature.Options.ClassInitialization, clazz.getTypeName(), "initialize-at-run-time") +
+                        " to explicitly request delayed initialization of this class.";
     }
 
     private static AnalysisType toAnalysisType(ResolvedJavaType type) {
@@ -243,27 +286,31 @@ public class ConfigurableClassInitialization implements ClassInitializationSuppo
     @Override
     public void initializeAtBuildTime(Class<?> aClass, String reason) {
         classInitializationConfiguration.insert(aClass.getTypeName(), InitKind.BUILD_TIME, reason);
+<<<<<<< HEAD
         forceInitializeHosted(aClass, reason);
+=======
+        forceInitializeHosted(aClass, reason, false);
+>>>>>>> vm-19.1.1
     }
 
     private void setKindForSubclasses(Class<?> clazz, InitKind kind) {
-        loader.findSubclasses(clazz).stream()
+        loader.findSubclasses(clazz, false).stream()
                         .filter(c -> !c.equals(clazz))
                         .filter(c -> !(c.isInterface() && !ClassInitializationFeature.declaresDefaultMethods(metaAccess.lookupJavaType(c))))
                         .forEach(c -> classInitializationConfiguration.insert(c.getTypeName(), kind, "subtype of " + clazz.getTypeName()));
     }
 
     @Override
-    public void forceInitializeHosted(Class<?> clazz, String reason) {
+    public void forceInitializeHosted(Class<?> clazz, String reason, boolean allowInitializationErrors) {
         if (clazz == null) {
             return;
         }
         classInitializationConfiguration.insert(clazz.getTypeName(), InitKind.BUILD_TIME, reason);
 
-        InitKind initKind = ensureClassInitialized(clazz);
+        InitKind initKind = ensureClassInitialized(clazz, allowInitializationErrors);
         classInitKinds.put(clazz, initKind);
 
-        forceInitializeHosted(clazz.getSuperclass(), "super type of " + clazz.getTypeName());
+        forceInitializeHosted(clazz.getSuperclass(), "super type of " + clazz.getTypeName(), allowInitializationErrors);
         forceInitializeInterfaces(clazz.getInterfaces(), "super type of " + clazz.getTypeName());
     }
 
@@ -272,7 +319,11 @@ public class ConfigurableClassInitialization implements ClassInitializationSuppo
             if (ClassInitializationFeature.declaresDefaultMethods(metaAccess.lookupJavaType(iface))) {
                 classInitializationConfiguration.insert(iface.getTypeName(), InitKind.BUILD_TIME, reason);
 
+<<<<<<< HEAD
                 ensureClassInitialized(iface);
+=======
+                ensureClassInitialized(iface, false);
+>>>>>>> vm-19.1.1
                 classInitKinds.put(iface, InitKind.BUILD_TIME);
             }
             forceInitializeInterfaces(iface.getInterfaces(), "super type of " + iface.getTypeName());
@@ -325,14 +376,18 @@ public class ConfigurableClassInitialization implements ClassInitializationSuppo
 
         /* Without doubt initialize all annotations. */
         if (clazz.isAnnotation()) {
+<<<<<<< HEAD
             forceInitializeHosted(clazz, "all annotations are initialized");
+=======
+            forceInitializeHosted(clazz, "all annotations are initialized", false);
+>>>>>>> vm-19.1.1
             return InitKind.BUILD_TIME;
         }
 
         /* Well, and enums that got initialized while annotations are parsed. */
         if (clazz.isEnum() && !UNSAFE.shouldBeInitialized(clazz)) {
             if (memoize) {
-                forceInitializeHosted(clazz, "enums referred in annotations must be initialized");
+                forceInitializeHosted(clazz, "enums referred in annotations must be initialized", false);
             }
             return InitKind.BUILD_TIME;
         }
@@ -340,7 +395,7 @@ public class ConfigurableClassInitialization implements ClassInitializationSuppo
         /* GR-14698 Lambdas get eagerly initialized in the method code. */
         if (clazz.getTypeName().contains("$$Lambda$")) {
             if (memoize) {
-                forceInitializeHosted(clazz, "lambdas must be initialized");
+                forceInitializeHosted(clazz, "lambdas must be initialized", false);
             }
             return InitKind.BUILD_TIME;
         }
@@ -354,7 +409,7 @@ public class ConfigurableClassInitialization implements ClassInitializationSuppo
 
         if (memoize) {
             if (!result.isDelayed()) {
-                result = result.max(ensureClassInitialized(clazz));
+                result = result.max(ensureClassInitialized(clazz, false));
             }
             InitKind previous = classInitKinds.put(clazz, result);
             assert previous == null || previous == result : "Overwriting existing value";

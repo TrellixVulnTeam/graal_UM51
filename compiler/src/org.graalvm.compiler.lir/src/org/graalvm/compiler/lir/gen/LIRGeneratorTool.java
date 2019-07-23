@@ -24,7 +24,7 @@
  */
 package org.graalvm.compiler.lir.gen;
 
-import java.util.BitSet;
+import java.nio.ByteBuffer;
 import java.util.List;
 
 import org.graalvm.compiler.core.common.CompressEncoding;
@@ -59,8 +59,6 @@ import jdk.vm.ci.meta.MetaAccessProvider;
 import jdk.vm.ci.meta.PlatformKind;
 import jdk.vm.ci.meta.Value;
 import jdk.vm.ci.meta.ValueKind;
-
-import java.nio.ByteBuffer;
 
 public interface LIRGeneratorTool extends DiagnosticLIRGeneratorTool, ValueKindFactory<LIRKind> {
 
@@ -276,7 +274,7 @@ public interface LIRGeneratorTool extends DiagnosticLIRGeneratorTool, ValueKindF
     }
 
     @SuppressWarnings("unused")
-    default Variable emitArrayIndexOf(JavaKind kind, boolean findTwoConsecutive, Value sourcePointer, Value sourceCount, Value... searchValues) {
+    default Variable emitArrayIndexOf(JavaKind arrayKind, JavaKind valueKind, boolean findTwoConsecutive, Value sourcePointer, Value sourceCount, Value fromIndex, Value... searchValues) {
         throw GraalError.unimplemented("String.indexOf substitution is not implemented on this architecture");
     }
 
@@ -326,8 +324,8 @@ public interface LIRGeneratorTool extends DiagnosticLIRGeneratorTool, ValueKindF
      */
     void emitSpeculationFence();
 
-    default VirtualStackSlot allocateStackSlots(int slots, BitSet objects, List<VirtualStackSlot> outObjectStackSlots) {
-        return getResult().getFrameMapBuilder().allocateStackSlots(slots, objects, outObjectStackSlots);
+    default VirtualStackSlot allocateStackSlots(int slots) {
+        return getResult().getFrameMapBuilder().allocateStackSlots(slots);
     }
 
     default Value emitReadCallerStackPointer(Stamp wordStamp) {
